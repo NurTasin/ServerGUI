@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=display-width, initial-scale=1.0">
+    <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/default.min.css" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/themes/semantic.min.css" />
+    <title>NodeMCU Reciever</title>
+    <style>
+        body {
+            background-color: #222;
+            color: #ccc;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="wrap">
+        <p>Status: <span id="status">UNKNOWN</span></p>
+        <p id="temp-plot">
+            Temperature is <span id="celcious">Unknown</span>&#8451; Or <span id="farenheit">Unknown</span>&#8457;
+        </p>
+        <br>
+        <p id="comment-plot">
+            Comment: <span id="comment"></span>
+        </p>
+    </div>
+    <script>
+        const Http = new XMLHttpRequest();
+        let ip_prompt = alertify.dialog('prompt').set({ transition: 'pulse', message: 'Enter the server IP Address', title: "Server Details", onok: (e, v) => { IP_Taken(e, v) }, oncancel: IP_NotTaken }).show();
+        function IP_Taken(ev, val) {
+            C = document.getElementById("celcious")
+            F = document.getElementById("farenheit")
+            Comm = document.getElementById("comment")
+            IP = val
+            setInterval(()=>{FetchNPlotData(IP, C, F, Comm)},1000);
+        }
+        function IP_NotTaken() {
+            document.getElementById("wrap").innerHTML = `<p>Without Getting The IP how am I supposed to contact to the server bro?</p><button id="reset" onclick="location.reload()">Enter IP</button>`
+            alertify.error("IP Not Given")
+        }
+        function FetchNPlotData(ip, celc, fahr, comm) {
+            Http.open("GET", ip);
+            Http.setRequestHeader("Access-Control-Allow-Origin", "*")
+            Http.send();
+
+            Http.onreadystatechange = (e) => {
+                if(e.target.readyState==4){
+                    if(e.target.status==200){
+                        temperature=JSON.parse(e.target.responseText).temp
+                        document.getElementById("status").innerText="Connected"
+                        celc.innerText=temperature
+                        fahr.innerText=(temperature*(9/5))+32
+                        comm.innerText=Doctor(temperature)
+                    }
+                }
+            }
+        }
+        function Doctor(temp) {
+            if(temp>38.5){
+                return "Your body is too warm. Please take the medicine provided and go to the nearest Doctor."
+            }else if(temp>37){
+                return "Your body is warm. Please take the medicine provided and take rest for few moments"
+            }else{
+                return "Your body temparature is normal. Take care."
+            }
+        }
+    </script>
+</body>
+
+</html>
